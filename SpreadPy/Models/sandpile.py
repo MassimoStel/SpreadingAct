@@ -42,7 +42,7 @@ class SandpileSpreading(SpreadingBaseModel):
         # we cache the degree of each node so we don't recompute it every time
         self.node_degree = {n: self.graph.degree(n) for n in self.graph.nodes}
 
-    def ___add_grain(self, actual_status, node=None):
+    def _add_grain(self, actual_status, node=None):
         """Add one grain to a single node."""
         # if no node is specified, pick one at random among non-sink nodes
         if node is None:
@@ -50,7 +50,7 @@ class SandpileSpreading(SpreadingBaseModel):
         # give it +1 grain
         actual_status[node] += 1
 
-    def ___topple(self, actual_status):
+    def _topple(self, actual_status):
         """Keep toppling unstable nodes until everything is stable again."""
         toppled_nodes = set()
         topplings_per_node = {}
@@ -110,10 +110,10 @@ class SandpileSpreading(SpreadingBaseModel):
 
         # --- step 1: add grains ---
         # standard sandpile: just drop one grain on a single node
-        self.___add_grain(actual_status, node=node)
+        self._add_grain(actual_status, node=node)
 
         # --- step 2: topple until everything is stable ---
-        avalanche = self.___topple(actual_status)
+        avalanche = self._topple(actual_status)
 
         # --- step 3: save the new state ---
         self.status = actual_status
