@@ -53,7 +53,9 @@ class SandpileSpreading(SpreadingBaseModel):
     def ___topple(self, actual_status):
         """Keep toppling unstable nodes until everything is stable again."""
         toppled_nodes = set()
+        topplings_per_node = {}
         total_topplings = 0
+        avalanche_size = 0
 
         # a node is unstable when its grains >= its degree (and degree > 0)
         unstable = [v for v in self.non_sink_nodes
@@ -65,6 +67,8 @@ class SandpileSpreading(SpreadingBaseModel):
                 actual_status[v] -= self.node_degree[v]
                 toppled_nodes.add(v)
                 total_topplings += 1
+                topplings_per_node[v] = topplings_per_node.get(v, 0) + 1
+                avalanche_size += self.node_degree[v]
 
                 # now distribute: each neighbour gets +1 grain
                 for u in self.node_neighbors[v]:
@@ -81,7 +85,9 @@ class SandpileSpreading(SpreadingBaseModel):
         return {
             "toppled_nodes": toppled_nodes,
             "total_topplings": total_topplings,
-            "avalanche_size": len(toppled_nodes),
+            "unique_toppled_nodes": len(toppled_nodes),
+            "avalanche_size": avalanche_size,
+            "topplings_per_node": topplings_per_node,
         }
 
     def iteration(self, node=None):
@@ -98,7 +104,9 @@ class SandpileSpreading(SpreadingBaseModel):
         if self.actual_iteration == 0:
             self.actual_iteration += 1
             return {"iteration": 0, "status": actual_status.copy(),
-                    "toppled_nodes": set(), "total_topplings": 0, "avalanche_size": 0}
+                    "toppled_nodes": set(), "total_topplings": 0,
+                    "unique_toppled_nodes": 0, "avalanche_size": 0,
+                    "topplings_per_node": {}}
 
         # --- step 1: add grains ---
         # standard sandpile: just drop one grain on a single node
