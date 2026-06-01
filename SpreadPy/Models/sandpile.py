@@ -57,9 +57,9 @@ class SandpileSpreading(SpreadingBaseModel):
         total_topplings = 0
         avalanche_size = 0
 
-        # a node is unstable when its grains >= its degree (and degree > 0)
+        # a node is unstable when its grains > its degree (and degree > 0)
         unstable = [v for v in self.non_sink_nodes
-                    if self.node_degree[v] > 0 and actual_status[v] >= self.node_degree[v]]
+                    if self.node_degree[v] > 0 and actual_status[v] > self.node_degree[v]]
 
         while unstable:
             for v in unstable:
@@ -80,7 +80,7 @@ class SandpileSpreading(SpreadingBaseModel):
 
             # after this round of topples, check if new nodes became unstable
             unstable = [v for v in self.non_sink_nodes
-                        if self.node_degree[v] > 0 and actual_status[v] >= self.node_degree[v]]
+                        if self.node_degree[v] > 0 and actual_status[v] > self.node_degree[v]]
 
         return {
             "toppled_nodes": toppled_nodes,  # insieme dei nodi che hanno superato la soglia almeno una volta
