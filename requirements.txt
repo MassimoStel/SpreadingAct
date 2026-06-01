@@ -26,6 +26,7 @@ openpyxl==3.1.5
 packaging==26.2
 pandas==3.0.3
 parso==0.8.7
+powerlaw==2.0.0
 pexpect==4.9.0
 pillow==12.2.0
 platformdirs==4.9.6

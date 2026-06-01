@@ -83,11 +83,11 @@ class SandpileSpreading(SpreadingBaseModel):
                         if self.node_degree[v] > 0 and actual_status[v] >= self.node_degree[v]]
 
         return {
-            "toppled_nodes": toppled_nodes,
-            "total_topplings": total_topplings,
-            "unique_toppled_nodes": len(toppled_nodes),
-            "avalanche_size": avalanche_size,
-            "topplings_per_node": topplings_per_node,
+            "toppled_nodes": toppled_nodes,  # insieme dei nodi che hanno superato la soglia almeno una volta
+            "total_topplings": total_topplings,  # numero totale di eventi di toppling
+            "unique_toppled_nodes": len(toppled_nodes), # quanti nodi distinti hanno superato la soglia almeno una volta
+            "avalanche_size": avalanche_size, # numero totale dei grani spostati
+            "topplings_per_node": topplings_per_node, # dizionario che associa a ogni nodo il numero di volte che ha superato la soglia
         }
 
     def iteration(self, node=None):
@@ -106,7 +106,8 @@ class SandpileSpreading(SpreadingBaseModel):
             return {"iteration": 0, "status": actual_status.copy(),
                     "toppled_nodes": set(), "total_topplings": 0,
                     "unique_toppled_nodes": 0, "avalanche_size": 0,
-                    "topplings_per_node": {}}
+                    "topplings_per_node": {},
+                    "has_avalanche": False}
 
         # --- step 1: add grains ---
         # standard sandpile: just drop one grain on a single node
@@ -115,9 +116,13 @@ class SandpileSpreading(SpreadingBaseModel):
         # --- step 2: topple until everything is stable ---
         avalanche = self._topple(actual_status)
 
+        # --- step 2b: derived metric ---
+        has_avalanche = avalanche["total_topplings"] > 0
+
         # --- step 3: save the new state ---
         self.status = actual_status
         self.actual_iteration += 1
 
         return {"iteration": self.actual_iteration - 1, "status": actual_status.copy(),
-                **avalanche}
+                **avalanche,
+                "has_avalanche": has_avalanche}
