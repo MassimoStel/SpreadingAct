@@ -1,0 +1,2 @@
+Manna Model Alpha: 2.065 +- 0.005
+Replications: 5

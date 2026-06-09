@@ -1,0 +1,4 @@
+Spearman(Degree, Avalanche) = -0.296 (p=1.563e-11)
+Spearman(Betweenness, Avalanche) = -0.288 (p=5.200e-11)
+Partial correlation (Betweenness, Avalanche | Degree) = -0.034
+ratio hub/periferia = 3.3x (Mann-Whitney p=1.000e+00)

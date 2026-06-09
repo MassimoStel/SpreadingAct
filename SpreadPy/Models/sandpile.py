@@ -20,16 +20,32 @@ class SandpileSpreading(SpreadingBaseModel):
     moves from one node to another disappears with probability f instead
     of arriving. When f > 0 and no sink is specified, dissipation is
     entirely stochastic.
+
+    Notes (for rigour):
+    - The model is *deterministic and abelian* only for f = 0 (with or without
+      a sink). For f > 0 the dynamics become stochastic (a Manna-type
+      dissipative sandpile), so the final configuration is no longer
+      order-independent. The power-law / criticality analysis therefore uses
+      f = 0; f > 0 is used only to show the controlled tail cutoff.
+    - Avalanche size S = sum of deg(v) over all topplings = grains *sent*. It is
+      exact at f = 0; for f > 0 it counts attempted transfers (some dissipated).
+    - Only the graph *topology* matters: a node always sends one grain per
+      neighbour. Edge weights, if present, are ignored.
     """
 
-    def __init__(self, graph, sink=None, f=0, max_topplings=None):
+    def __init__(self, graph, sink=None, f=0, strict=True, max_topplings=None):
         """
         :param graph:   networkx graph
         :param sink:    any node s ∈ V designated as sink (absorbs grains, never topples).
                         If None, no sink is used.
         :param f:       dissipation probability per grain transfer (default 0)
+        :param strict:  toppling-threshold convention.
+                        True  -> a node topples when height >  degree
+                                 (max stable height = degree). Default.
+                        False -> a node topples when height >= degree
+                                 (classic BTW/Dhar, max stable height = degree - 1).
         :param max_topplings: safety guard M — max topplings per avalanche before
-                              clipping excess grains. Default: 10 * number_of_nodes.
+                              the cascade is declared divergent. Default: 10 * number_of_nodes.
         """
         # the sandpile doesn't need retention, decay or suppress
         super(SandpileSpreading, self).__init__(graph, retention=0, decay=0, suppress=0)
@@ -39,13 +55,27 @@ class SandpileSpreading(SpreadingBaseModel):
 
         self.sink = sink
         self.f = f
+        self.strict = strict
         # all nodes except the sink — these are the ones that can accumulate and topple
         self.non_sink_nodes = [n for n in self.graph.nodes if n != self.sink]
         # we cache the degree of each node so we don't recompute it every time
         self.node_degree = {n: self.graph.degree(n) for n in self.graph.nodes}
-        # K_TOT: sum of degrees — also the max useful iteration count
+        # critical height = lowest height at which a node becomes unstable.
+        #   strict '>' : unstable when height >  degree  -> crit = degree + 1
+        #   classic '>=': unstable when height >= degree -> crit = degree
+        self.crit = {n: self.node_degree[n] + (1 if strict else 0)
+                     for n in self.graph.nodes}
+        # K_TOT: sum of degrees over non-sink nodes (relaxation/burn-in time, Dhar 1990)
         self.sum_degrees = sum(self.node_degree[n] for n in self.non_sink_nodes)
-        # safety guard against divergent avalanches in the SOC chaotic regime
+        # Maximum stable mass: total grains the system can hold in a stable config,
+        # = sum of (crit - 1) over non-sink nodes with degree > 0.
+        # In a CLOSED system (sink=None, f=0) no stable configuration can hold more
+        # than this; once total_grains exceeds it the dynamics can no longer terminate
+        # -> supercritical/"chaotic" regime. Use it as the order-parameter ceiling.
+        self.max_stable_mass = sum(self.crit[n] - 1
+                                   for n in self.non_sink_nodes
+                                   if self.node_degree[n] > 0)
+        # safety guard against divergent avalanches in the supercritical regime
         self.max_topplings = max_topplings if max_topplings is not None else 10 * len(self.non_sink_nodes)
 
     def _add_grain(self, actual_status, node=None):
@@ -59,9 +89,9 @@ class SandpileSpreading(SpreadingBaseModel):
         return node
 
     def _unstable(self, status):
-        """Nodes that exceed the toppling threshold (strictly > degree)."""
+        """Nodes that reach the toppling threshold (height >= crit; see `strict`)."""
         return [v for v in self.non_sink_nodes
-                if self.node_degree[v] > 0 and status[v] > self.node_degree[v]]
+                if self.node_degree[v] > 0 and status[v] >= self.crit[v]]
 
     @staticmethod
     def _empty_avalanche():

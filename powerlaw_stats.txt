@@ -1,0 +1,9 @@
+N nodi: 1500
+xmin stimato: 14.0
+alpha: 1.4379
+Sigma: 0.0166
+CI 95% per alpha: [1.4055, 1.4704]
+Power-law vs Lognormal: R=1.0640, p=0.2873
+Power-law vs Truncated Power-law: R=-4.1619, p=0.0002
+Power-law vs Exponential: R=33.7740, p=0.0000
+N valanghe (f=0): 2917
